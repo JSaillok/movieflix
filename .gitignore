@@ -1,0 +1,13 @@
+/vendor
+/node_modules
+/.env
+/.env.backup
+/.env.example.backup
+/public/hot
+/public/storage
+/storage/*.key
+/.vscode
+/docker-compose.yml
+/Dockerfile
+/.docker
+*.log
