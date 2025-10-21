@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('watchlist_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('watcthlist_id')->constrained('watchlists')->onDelete('cascade');
+            $table->foreignId('watchlist_id')->constrained('watchlists')->onDelete('cascade');
             $table->foreignId('movie_id')->constrained('movies')->onDelete('cascade');
             $table->string('tmdb_id')->nullable();
             $table->integer('season')->nullable();

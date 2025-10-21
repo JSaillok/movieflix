@@ -14,8 +14,4 @@ Route::get('movie', [MovieController::class, 'index']);
 Route::get('/movies/search', [MovieController::class, 'search']); // GET external TMDB search
 
 // CRUD routes for local movies
-Route::get('/movies', [MovieController::class, 'index']);       // GET all local movies
-Route::post('/movies', [MovieController::class, 'store']);      // POST create local movie
-Route::get('/movies/{id}', [MovieController::class, 'show']);   // GET single local movie
-Route::put('/movies/{id}', [MovieController::class, 'update']); // PUT update local movie
-Route::delete('/movies/{id}', [MovieController::class, 'destroy']); // DELETE local movie
+Route::resource('movies', MovieController::class);

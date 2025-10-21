@@ -3,79 +3,56 @@
 namespace App\Http\Controllers;
 
 use App\Models\Movie;
-use Illuminate\Http\Request;
 use App\Services\TmdbService;
+use Illuminate\Http\Request;
 
 class MovieController extends Controller
 {
-    protected $tmdbService;
+    protected TmdbService $tmdb;
 
-    public function __construct(TmdbService $tmdbService) {
-        $this->tmdbService = $tmdbService;
+    public function __construct(TmdbService $tmdb)
+    {
+        $this->tmdb = $tmdb;
     }
 
-    public function index() {
-        return response()->json(Movie::all(), 200);
+    // Local DB index
+    public function index()
+    {
+        $movies = Movie::latest()->paginate(10);
+        return view('movies.index', compact('movies'));
     }
 
-    public function store(Request $request) {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'year'  => 'nullable|integer',
-            'notes' => 'nullable|string',
-        ]);
-
-        $movie = Movie::create($validated);
-
-        return response()->json($movie, 201);
-    }
-
-    public function show($title) {
-        $movie = Movie::find($title);
-        if (!$movie) {
-            return response()->json(['error' => 'Movie not found'], 404);
-        }
-        return response()->json($movie, 200);
-    }
-
-    public function update(Request $request, $id) {
+    // Show movie details
+    public function show($id)
+    {
+        // Try local DB first
         $movie = Movie::find($id);
+
+        // If not in DB, fetch from TMDB
         if (!$movie) {
-            return response()->json(['error' => 'Movie not found'], 404);
+            $movie = $this->tmdb->request("movie/{$id}");
         }
 
-        $validated = $request->validate([
-            'title' => 'sometimes|string|max:255',
-            'year'  => 'sometimes|integer',
-            'notes' => 'nullable|string',
-        ]);
-
-        $movie->update($validated);
-
-        return response()->json($movie, 200);
+        return view('movies.show', compact('movie'));
     }
 
-    public function destroy($id) {
-        $movie = Movie::find($id);
-        if (!$movie) {
-            return response()->json(['error' => 'Movie not found'], 404);
-        }
-        $movie->delete();
+    // Search (using DB first, fallback to TMDB)
+    public function search(Request $request)
+    {
+        $term = $request->get('q');
 
-        return response()->json(null, 204);
-    }
+        $movies = Movie::search($term)->get();
 
-    public function search(Request $request, TmdbService $tmdb) {
-        $query = $request->query('query');
-        if (!$query) {
-            return response()->json(['error' => 'Missing query parameter'], 400);
+        if ($movies->isEmpty()) {
+            $data = $this->tmdb->request('search/movie', [
+                'query' => $term,
+                'include_adult' => false,
+                'language' => 'en-US',
+                'page' => 1,
+            ]);
+            $movies = collect($data['results']);
         }
 
-        try {
-            $results = $tmdb->searchMovies($query);
-            return response()->json($results, 200);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
+        return view('movies.search', compact('movies', 'term'));
     }
 }
